@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html data-theme="dark" lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href=" {{url_for('static', filename='app.css')}} " />
+    <link rel="stylesheet" href=" {{url_for('static', filename='template.css')}} " />
+    <title>Projectos | ESCALIA Pythonweb</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <header id="header">
+        <input type="checkbox" id="menu" />
+        <label for="menu">
+            <img src="./static/library/logotype_resourses/accesibility/menu.svg" class="menu-icon" alt="" />
+        </label>
+        <ul class="menu">
+            <li class="item">
+                <a class="link" href="https://escalia-corporation.github.io/Website/about.html">
+                    <button class="header-link">Acerca de</button></a>
+            </li>
+        </ul>
+    </header>
+
+    <main>
+        <section class="title">
+            <h1>Proyectos</h1>
+        </section>
+
+        <section class="content">
+            <div class="container">
+                <h2>Prueba este anuncio de impresion en raspberry pi</h2>
+                <br>
+                <form action="/text" method="POST">
+                    <p for="customtext">Escribe tu texto: solo 4 caracteres</p>
+                    <input type="text" name="customtext" placeholder="Texto">
+
+                    <div class="controls">
+                        <button type="submit" class="button">Imprimir</button>
+                    </div>
+                </form>
+            </div>
+            <div class="container">
+                <h2>imprimir en el banner</h2>
+                <br>
+                <form action="/banner" method="POST">
+                    <p for="customtext">Escribe tu texto</p>
+                    <input type="text" name="customtextbanner" placeholder="Texto">
+
+                    <div class="controls">
+                        <button type="submit" class="button">Imprimir</button>
+                    </div>
+                </form>
+            </div>
+            <div class="container">
+                <h2>lectura de sensor de ultrasonido</h2>
+                <br>
+                <form action="/ultrasonic" method="POST">
+                    <p>Ultrasonido</p>
+                    <input type="text" name="ultrasonic" placeholder="Ultrasonido">
+
+                    <div class="controls">
+                        <button type="submit" class="button">Leer</button>
+                    </div>
+                <br>
+                <form action="/mqtt" method="POST">
+                    <p>Datos actualmente recibidos:
+                    </p>
+                </form>
+            </div>
+        </section>
+    </main>
+</body>
+
+</html>
