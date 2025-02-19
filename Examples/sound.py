@@ -10,7 +10,7 @@ sound_sensor = Sound(24)
 
 while True:
     # check if sound detected or not
-    if(sound_sensor.value == 0):
+    if(sound_sensor.value <= 50):
         print('Sound Detected')
         time.sleep(0.1)
 

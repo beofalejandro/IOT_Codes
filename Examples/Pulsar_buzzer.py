@@ -15,5 +15,6 @@ while True:
     if touch_sensor.value :
         print('Touch Detected')
         buzzer.on()
-    time.sleep(0.1)
-    buzzer.off()
+    else:
+        buzzer.off()
+    time.sleep(0.1)  # Pequeña pausa para evitar rebotes
