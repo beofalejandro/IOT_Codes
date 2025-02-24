@@ -10,6 +10,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
 </head>
 
 <body>
@@ -29,9 +31,28 @@
     <main>
         <section class="title">
             <h1>Proyectos</h1>
+            <a href="/iraprueba">
+                <button>Ir a la página de prueba</button>
+            </a>
         </section>
 
         <section class="content">
+            <div class="graphs-container">
+                <div class="container graph">
+                    <h2>Grafico de Humedad aleatorio</h2>
+                    <br>
+                    <div class="canva-graph">
+                        <canvas id="temperaturechart" ></canvas>
+                    </div>
+                </div>
+                <div class="container graph">
+                    <h2>Grafico de oxigeno aleatorio</h2>
+                    <br>
+                    <div class="canva-graph">
+                        <canvas id="humiditychart"></canvas>
+                    </div>
+                </div>
+            </div>
             <div class="container">
                 <h2>Prueba este anuncio de impresion en raspberry pi</h2>
                 <br>
@@ -45,7 +66,7 @@
                 </form>
             </div>
             <div class="container">
-                <h2>imprimir en el banner</h2>
+                <h2>Imprimir en el banner</h2>
                 <br>
                 <form action="/banner" method="POST">
                     <p for="customtext">Escribe tu texto</p>
@@ -57,7 +78,7 @@
                 </form>
             </div>
             <div class="container">
-                <h2>lectura de sensor de ultrasonido</h2>
+                <h2>Lectura de sensor de ultrasonido</h2>
                 <br>
                 <form action="/ultrasonic" method="POST">
                     <p>Ultrasonido</p>
@@ -66,14 +87,91 @@
                     <div class="controls">
                         <button type="submit" class="button">Leer</button>
                     </div>
-                <br>
-                <form action="/mqtt" method="POST">
-                    <p>Datos actualmente recibidos:
-                    </p>
+                    <br>
                 </form>
             </div>
         </section>
     </main>
+
+    <script>
+        const ctx = document.getElementById('temperaturechart').getContext('2d');   
+        const tdata = {
+            labels: [],
+            datasets: [{
+                label: 'Datos Aleatorios',
+                data: [],
+                borderColor: '#63d1d1',
+                borderWidth: 1,
+                fill: false
+            }]
+        };
+
+        const tconfig = {
+            type: 'line',
+            data: tdata,
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        };
+
+        const temperaturechart = new Chart(ctx, tconfig);
+
+        const tsocket = io();
+
+        tsocket.on('t_new_data', function (msg) {
+            if (tdata.labels.length >= 20) {
+                tdata.labels.shift(); // Elimina el primer label si hay más de 10
+                tdata.datasets[0].data.shift(); // Elimina el primer dato si hay más de 10
+            }
+            tdata.labels.push(new Date().toLocaleTimeString());
+            tdata.datasets[0].data.push(msg.value);
+            temperaturechart.update();
+        });
+
+
+        ////////////////////
+        const ctxhuminity = document.getElementById('humiditychart').getContext('2d');   
+        const hdata = {
+            labels: [],
+            datasets: [{
+                label: 'Datos Aleatorios',
+                data: [],
+                borderColor: '#63d1d1',
+                borderWidth: 1,
+                fill: false
+            }]
+        };
+
+        const hconfig = {
+            type: 'line',
+            data: hdata,
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        };
+
+        const humiditychart = new Chart(ctxhuminity, hconfig);
+        const hsocket = io();
+
+        hsocket.on('h_new_data', function (msg) {
+            //Elimina el valor si supera los que indicas
+            if (hdata.labels.length >= 20) {
+                hdata.labels.shift();
+                hdata.datasets[0].data.shift();
+            }
+            hdata.labels.push(new Date().toLocaleTimeString());
+            hdata.datasets[0].data.push(msg.value);
+            humiditychart.update();
+        });
+    </script>
 </body>
 
 </html>

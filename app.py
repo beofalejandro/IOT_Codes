@@ -1,6 +1,14 @@
 from flask import Flask as fk, render_template as rt, request as rq
 from gpiozero import LED, Buzzer
 
+from flask import Flask, render_template
+from flask_socketio import SocketIO
+import random
+import time
+import threading
+
+app = fk(__name__)
+socketio = SocketIO(app)
 
 #import HD44780MCP
 #import time
@@ -20,7 +28,6 @@ from gpiozero import LED, Buzzer
 #led_state = False
 #buzzer_state = False
 
-app = fk(__name__)
 
 @app.route('/')
 def index():
@@ -41,5 +48,26 @@ def index():
 
     return rt('index.html')
 
+def generate_data():
+    while True:
+        # Genera datos aleatorios
+        tdata = random.randint(1, 100)
+        hdata = random.randint(1, 1000)
+        socketio.emit('t_new_data', {'value':tdata})
+        socketio.emit('h_new_data', {'value':hdata})
+        time.sleep(5)
+
+
+@app.route('/iraprueba')
+def prueba():
+    return rt('prueba.html')
+
+
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    thread = threading.Thread(target=generate_data)
+    thread.start()
+    socketio.run(app)
+
+
+if __name__ == '__main__':
+    app.run(host="0.0.0.0", port=5001, debug=True)  
