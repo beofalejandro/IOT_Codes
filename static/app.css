@@ -30,7 +30,7 @@ h1 {
   margin: 1% 10px;
   padding: 1.5%;
   background: linear-gradient(120deg, #4100663f, #00466642);
-  border: 1px solid var(--color);
+  border: 1px solid var(--dark-container-border);
   border-radius: 5px;
   color: var(--color);
 }
