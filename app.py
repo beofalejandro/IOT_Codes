@@ -6,7 +6,7 @@ from time import strftime, sleep
 from DFRobot_DHT20 import DFRobot_DHT20 as DFRobot
 import threading as threating
 
-app = fk(_name_)
+app = fk(__name__)
 socketio = SocketIO(app)
 
 I2C_BUS = 0x01  # default use I2C1 bus
@@ -39,7 +39,7 @@ def generate_data():
                 socketio.emit('h_new_data', {'value': humidity})
             sleep(5)
 
-if _name_ == '_main_':
+if __name__ == '__main__':
     thread = threating.Thread(target=generate_data)
     thread.daemon = True
     thread.start()
