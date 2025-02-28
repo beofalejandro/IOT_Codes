@@ -12,7 +12,7 @@ body {
   margin-top: 70px;
   text-align: center;
   align-content: center;
-  height: 200px;
+  height: 10px;
 }
 
 h1 {
@@ -21,13 +21,13 @@ h1 {
 }
 
 .content {
-  padding: 20px 10px;
+  padding: 50px 10px 0;
   text-align: center;
   align-content: center;
 }
 
 .container {
-  margin: 1% 10px;
+  margin: 15px 10px;
   padding: 1.5%;
   background: linear-gradient(120deg, #41006631, #0046662f);
   border: 0.5px solid #303030;
@@ -54,7 +54,7 @@ canvas {
 
 @media screen and (min-width: 1400px) {
   .content {
-    margin: 4% 13%;
+    margin: 0px 3%;
   }
 }
 

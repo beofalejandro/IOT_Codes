@@ -1,46 +1,92 @@
-from flask import Flask as fk, render_template as rt, request as rq
+import json
+import sqlite3
+import paho.mqtt.client as mqtt
+from flask import Flask, render_template
 from flask_socketio import SocketIO
-from gpiozero import LED, Buzzer
-import time
-from time import strftime, sleep
-from DFRobot_DHT20 import DFRobot_DHT20 as DFRobot
-import threading as threating
 
-app = fk(__name__)
+# Configuración MQTT
+BROKER_IP = "192.168.0.13"
+TOPIC = "GsmClient/Oceano/JSON"
+
+# Configuración Flask y SocketIO
+app = Flask(__name__)
 socketio = SocketIO(app)
 
-I2C_BUS = 0x01  # default use I2C1 bus
-I2C_ADDRESS = 0x38  # default I2C device address
+# Variable global para estado del broker
+mqtt_connected = False
 
-dht20 = DFRobot(I2C_BUS, I2C_ADDRESS)
+# Conectar a SQLite y crear tablas
+def init_db():
+    conn = sqlite3.connect("sensores.db")
+    cursor = conn.cursor()
+    cursor.execute("CREATE TABLE IF NOT EXISTS MQ135 (id INTEGER PRIMARY KEY, valor REAL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS Temp (id INTEGER PRIMARY KEY, valor REAL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS TDS (id INTEGER PRIMARY KEY, valor REAL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS PH (id INTEGER PRIMARY KEY, valor REAL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS LDR (id INTEGER PRIMARY KEY, valor REAL, timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)")
+    conn.commit()
+    conn.close()
 
-@app.route('/')
+# Guardar datos en SQLite
+def save_data(sensor, value):
+    conn = sqlite3.connect("sensores.db")
+    cursor = conn.cursor()
+    cursor.execute(f"INSERT INTO {sensor} (valor) VALUES (?)", (value,))
+    conn.commit()
+    conn.close()
+
+# Manejo de eventos MQTT
+def on_connect(client, userdata, flags, rc):
+    global mqtt_connected
+    if rc == 0:
+        mqtt_connected = True
+        print("✅ Conectado a MQTT")
+        client.subscribe(TOPIC)
+    else:
+        mqtt_connected = False
+        print("❌ Error al conectar MQTT")
+
+    socketio.emit("mqtt_status", {"status": mqtt_connected})
+
+def on_message(client, userdata, msg):
+    try:
+        data = json.loads(msg.payload.decode("utf-8"))
+        print("📡 Datos recibidos:", data)
+
+        save_data("MQ135", data["MQ135"])
+        save_data("Temp", data["Temp"])
+        save_data("TDS", data["TDS"])
+        save_data("PH", data["PH"])
+        save_data("LDR", data["LDR"])
+
+        # Emitir datos a la interfaz en tiempo real
+        socketio.emit("sensor_data", data)
+    except Exception as e:
+        print("❌ Error procesando mensaje MQTT:", e)
+
+# Hilo MQTT
+def mqtt_thread():
+    global mqtt_connected
+    client = mqtt.Client()
+    client.on_connect = on_connect
+    client.on_message = on_message
+
+    try:
+        client.connect(BROKER_IP, 1883, 60)
+        client.loop_forever()
+    except Exception as e:
+        mqtt_connected = False
+        print("❌ No se pudo conectar al broker MQTT:", e)
+        socketio.emit("mqtt_status", {"status": mqtt_connected})
+
+# Ruta principal
+@app.route("/")
 def index():
-    return rt('index.html')
+    return render_template("index.html", mqtt_connected=mqtt_connected)
 
-@app.route('/iraprueba')
-def prueba():
-    return rt('prueba.html')
-
-def generate_data():
-    while True:
-        if not dht20.begin():
-            print("DHT20 sensor initialization failed")
-            socketio.emit('sensor_error', {'message': "DHT20 sensor initialization failed"})
-            sleep(5)
-        else:
-            T_celcius, humidity, crc_error = dht20.get_temperature_and_humidity()
-            if crc_error:
-                print("CRC Error")
-                socketio.emit('sensor_error', {'message': "CRC Error"})
-            else:
-                T_fahrenheit = T_celcius * 9 / 5 + 32
-                socketio.emit('t_new_data', {'value': T_celcius})
-                socketio.emit('h_new_data', {'value': humidity})
-            sleep(5)
-
-if __name__ == '__main__':
-    thread = threating.Thread(target=generate_data)
-    thread.daemon = True
-    thread.start()
-    socketio.run(app, host="0.0.0.0", port=5001, debug=True, allow_unsafe_werkzeug=True)
+# Iniciar base de datos y MQTT en hilo separado
+if __name__ == "__main__":
+    init_db()
+    import threading
+    threading.Thread(target=mqtt_thread, daemon=True).start()
+    socketio.run(app, host="0.0.0.0", port=5000, debug=True)

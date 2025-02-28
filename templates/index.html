@@ -1,182 +1,49 @@
 <!DOCTYPE html>
-<html data-theme="dark" lang="en">
-
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href=" {{url_for('static', filename='app.css')}} " />
-    <link rel="stylesheet" href=" {{url_for('static', filename='template.css')}} " />
-    <title>Projectos | ESCALIA Pythonweb</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300..700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.js"></script>
+    <title>Monitor de Sensores</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
+        .status { font-size: 20px; font-weight: bold; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
 </head>
-
 <body>
-    <header id="header">
-        <input type="checkbox" id="menu" />
-        <label for="menu">
-            <img src="./static/library/logotype_resourses/accesibility/menu.svg" class="menu-icon" alt="" />
-        </label>
-        <ul class="menu">
-            <li class="item">
-                <a class="link" href="https://escalia-corporation.github.io/Website/about.html">
-                    <button class="header-link">Acerca de</button></a>
-            </li>
-        </ul>
-    </header>
 
-    <main>
-        <section class="title">
-            <h1>Dashboard de IoT</h1>
-            <a href="/iraprueba">
-            </a>
-        </section>
+    <div id="mqtt-status" class="status"></div>
 
-        <section class="content">
-            <div class="graphs-container">
-                <div class="container graph">
-                    <h2>Medicion de Temperatura</h2>
-                    <br>
-                    <div class="canva-graph">
-                        <canvas id="temperaturechart" ></canvas>
-                    </div>
-                </div>
-                <div class="container graph">
-                    <h2>Medicion de Humedad</h2>
-                    <br>
-                    <div class="canva-graph">
-                        <canvas id="humiditychart"></canvas>
-                    </div>
-                </div>
-            </div>
-            <div class="container">
-                <h2>Activacion</h2>
-                <br>
-                <button>Encender Algo</button>
-            </div>
-            <br>
-            <div class="container">
-                <h2>Prueba este anuncio de impresion en raspberry pi</h2>
-                <br>
-                <form action="/text" method="POST">
-                    <p for="customtext">Escribe tu texto: solo 4 caracteres</p>
-                    <input type="text" name="customtext" placeholder="Texto">
-
-                    <div class="controls">
-                        <button type="submit" class="button">Imprimir</button>
-                    </div>
-                </form>
-            </div>
-            <div class="container">
-                <h2>Imprimir en el banner</h2>
-                <br>
-                <form action="/banner" method="POST">
-                    <p for="customtext">Escribe tu texto</p>
-                    <input type="text" name="customtextbanner" placeholder="Texto">
-
-                    <div class="controls">
-                        <button type="submit" class="button">Imprimir</button>
-                    </div>
-                </form>
-            </div>
-            <div class="container">
-                <h2>Lectura de sensor de ultrasonido</h2>
-                <br>
-                <form action="/ultrasonic" method="POST">
-                    <p>Ultrasonido</p>
-                    <input type="text" name="ultrasonic" placeholder="Ultrasonido">
-
-                    <div class="controls">
-                        <button type="submit" class="button">Leer</button>
-                    </div>
-                    <br>
-                </form>
-            </div>
-        </section>
-    </main>
+    <h2>Datos Recibidos</h2>
+    <p><strong>MQ135:</strong> <span id="mq135">-</span></p>
+    <p><strong>Temperatura:</strong> <span id="temp">-</span> °C</p>
+    <p><strong>TDS:</strong> <span id="tds">-</span></p>
+    <p><strong>pH:</strong> <span id="ph">-</span></p>
+    <p><strong>LDR:</strong> <span id="ldr">-</span></p>
 
     <script>
-        const ctx = document.getElementById('temperaturechart').getContext('2d');   
-        const tdata = {
-            labels: [],
-            datasets: [{
-                label: 'Temperatura',
-                data: [],
-                borderColor: '#63d1d1',
-                borderWidth: 1,
-                fill: false
-            }]
-        };
+        var socket = io();
 
-        const tconfig = {
-            type: 'line',
-            data: tdata,
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
+        socket.on("mqtt_status", function(data) {
+            var statusDiv = document.getElementById("mqtt-status");
+            if (data.status) {
+                statusDiv.innerHTML = "✅ Conectado al broker MQTT";
+                statusDiv.className = "status success";
+            } else {
+                statusDiv.innerHTML = "❌ Error: No se pudo conectar al broker MQTT";
+                statusDiv.className = "status error";
             }
-        };
-
-        const temperaturechart = new Chart(ctx, tconfig);
-
-        const tsocket = io();
-
-        tsocket.on('t_new_data', function (msg) {
-            if (tdata.labels.length >= 20) {
-                tdata.labels.shift(); // Elimina el primer label si hay más de 10
-                tdata.datasets[0].data.shift(); // Elimina el primer dato si hay más de 10
-            }
-            tdata.labels.push(new Date().toLocaleTimeString());
-            tdata.datasets[0].data.push(msg.value);
-            temperaturechart.update();
         });
 
-
-        ////////////////////
-        const ctxhuminity = document.getElementById('humiditychart').getContext('2d');   
-        const hdata = {
-            labels: [],
-            datasets: [{
-                label: 'Humedad',
-                data: [],
-                borderColor: '#63d1d1',
-                borderWidth: 1,
-                fill: false
-            }]
-        };
-
-        const hconfig = {
-            type: 'line',
-            data: hdata,
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        };
-
-        const humiditychart = new Chart(ctxhuminity, hconfig);
-        const hsocket = io();
-
-        hsocket.on('h_new_data', function (msg) {
-            //Elimina el valor si supera los que indicas
-            if (hdata.labels.length >= 20) {
-                hdata.labels.shift();
-                hdata.datasets[0].data.shift();
-            }
-            hdata.labels.push(new Date().toLocaleTimeString());
-            hdata.datasets[0].data.push(msg.value);
-            humiditychart.update();
+        socket.on("sensor_data", function(data) {
+            document.getElementById("mq135").innerText = data.MQ135;
+            document.getElementById("temp").innerText = data.Temp;
+            document.getElementById("tds").innerText = data.TDS;
+            document.getElementById("ph").innerText = data.PH;
+            document.getElementById("ldr").innerText = data.LDR;
         });
     </script>
 </body>
-
 </html>
